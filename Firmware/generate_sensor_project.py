@@ -53,7 +53,7 @@ static const char *TAG = "SENSOR_APP";
 // LSM6DSOX CONSTANTS (IMU)
 // ==========================================================
 #define LSM6DSOX_ADDR               0x6A   // Default Address (or 0x6B)
-#define LSM6DSOX_WHO_AM_I           0x0F
+#define LSM6DSOX_WHO_AM_I           0x6C
 #define LSM6DSOX_CTRL1_XL           0x10   // Accel Config
 #define LSM6DSOX_CTRL2_G            0x11   // Gyro Config
 #define LSM6DSOX_OUTX_L_G           0x22   // Start of Gyro Data
@@ -63,7 +63,7 @@ static const char *TAG = "SENSOR_APP";
 // BMP388 CONSTANTS (Pressure/Temp)
 // ==========================================================
 #define BMP388_ADDR                 0x77   // Default Address (or 0x77)
-#define BMP388_CHIP_ID              0x00
+#define BMP388_CHIP_ID              0x50
 #define BMP388_ERR_REG              0x02
 #define BMP388_STATUS               0x03
 #define BMP388_DATA_0               0x04   // Pressure Data LSB
