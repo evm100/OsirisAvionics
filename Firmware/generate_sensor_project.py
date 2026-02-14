@@ -62,7 +62,7 @@ static const char *TAG = "SENSOR_APP";
 // ==========================================================
 // BMP388 CONSTANTS (Pressure/Temp)
 // ==========================================================
-#define BMP388_ADDR                 0x76   // Default Address (or 0x77)
+#define BMP388_ADDR                 0x77   // Default Address (or 0x77)
 #define BMP388_CHIP_ID              0x00
 #define BMP388_ERR_REG              0x02
 #define BMP388_STATUS               0x03
