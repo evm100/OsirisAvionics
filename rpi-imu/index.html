@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Osiris Avionics - IMU Dashboard</title>
+    <script src="https://unpkg.com/smoothie@1.36.1/smoothie.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.4em;
+            color: #00ccff;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+        }
+        #status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.85em;
+            margin-bottom: 16px;
+        }
+        #status .light {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        #status.connected { color: #0f0; }
+        #status.connected .light {
+            background: #0f0;
+            box-shadow: 0 0 6px #0f0, 0 0 12px #0f0;
+        }
+        #status.simulated { color: #f44; }
+        #status.simulated .light {
+            background: #f44;
+            box-shadow: 0 0 6px #f44, 0 0 12px #f44;
+        }
+        #status.disconnected { color: #f44; }
+        #status.disconnected .light {
+            background: #f44;
+            box-shadow: 0 0 6px #f44, 0 0 12px #f44;
+        }
+        .chart-section {
+            margin-bottom: 20px;
+        }
+        .chart-section h2 {
+            font-size: 1em;
+            margin-bottom: 6px;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .chart-wrap canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .legend {
+            display: flex;
+            gap: 18px;
+            margin-top: 6px;
+            font-size: 0.85em;
+        }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .legend .swatch {
+            display: inline-block;
+            width: 14px; height: 3px;
+            border-radius: 1px;
+        }
+    </style>
+</head>
+<body>
+    <h1>OSIRIS AVIONICS / LSM6DSOX IMU</h1>
+    <div id="status" class="disconnected"><span class="light"></span><span id="statusText">DISCONNECTED</span></div>
+
+    <div class="chart-section">
+        <h2>ACCELEROMETER (m/s&sup2;)</h2>
+        <div class="chart-wrap">
+            <canvas id="accelChart" width="1200" height="240"></canvas>
+        </div>
+        <div class="legend">
+            <span><span class="swatch" style="background:#ff4444"></span> X: <span id="ax">--</span></span>
+            <span><span class="swatch" style="background:#44ff44"></span> Y: <span id="ay">--</span></span>
+            <span><span class="swatch" style="background:#4488ff"></span> Z: <span id="az">--</span></span>
+        </div>
+    </div>
+
+    <div class="chart-section">
+        <h2>GYROSCOPE (rad/s)</h2>
+        <div class="chart-wrap">
+            <canvas id="gyroChart" width="1200" height="240"></canvas>
+        </div>
+        <div class="legend">
+            <span><span class="swatch" style="background:#ff8800"></span> X: <span id="gx">--</span></span>
+            <span><span class="swatch" style="background:#cc44ff"></span> Y: <span id="gy">--</span></span>
+            <span><span class="swatch" style="background:#ffdd00"></span> Z: <span id="gz">--</span></span>
+        </div>
+    </div>
+
+    <script>
+        function makeChart(canvasId, colors) {
+            const canvas = document.getElementById(canvasId);
+            // Set canvas resolution to match display size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const chart = new SmoothieChart({
+                millisPerPixel: 10,
+                interpolation: 'bezier',
+                grid: {
+                    fillStyle: '#0d0d18',
+                    strokeStyle: 'rgba(255,255,255,0.08)',
+                    verticalSections: 8,
+                    millisPerLine: 2000,
+                    borderVisible: true,
+                },
+                labels: {
+                    fillStyle: '#888',
+                    fontSize: 12,
+                    precision: 2,
+                },
+                tooltipLine: { strokeStyle: '#555' },
+                responsive: true,
+                maxValueScale: 1.2,
+                minValueScale: 1.2,
+            });
+            const series = colors.map(c => {
+                const ts = new TimeSeries();
+                chart.addTimeSeries(ts, {
+                    strokeStyle: c,
+                    lineWidth: 2,
+                    fillStyle: undefined,
+                });
+                return ts;
+            });
+            chart.streamTo(canvas, 500);
+            return series;
+        }
+
+        // Wait for DOM + CDN script to be ready
+        window.addEventListener('load', () => {
+            if (typeof SmoothieChart === 'undefined') {
+                document.getElementById('status').textContent = 'ERROR: SmoothieCharts failed to load';
+                return;
+            }
+
+            const accelSeries = makeChart('accelChart', ['#ff4444', '#44ff44', '#4488ff']);
+            const gyroSeries = makeChart('gyroChart', ['#ff8800', '#cc44ff', '#ffdd00']);
+
+            const statusEl = document.getElementById('status');
+            const valEls = {
+                ax: document.getElementById('ax'), ay: document.getElementById('ay'), az: document.getElementById('az'),
+                gx: document.getElementById('gx'), gy: document.getElementById('gy'), gz: document.getElementById('gz'),
+            };
+
+            function connect() {
+                const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+                ws.onopen = () => {
+                    document.getElementById('statusText').textContent = 'CONNECTED';
+                    statusEl.className = 'connected';
+                };
+
+                ws.onmessage = (e) => {
+                    const d = JSON.parse(e.data);
+                    if (d.sim) {
+                        statusEl.className = 'simulated';
+                        document.getElementById('statusText').textContent = 'IMU NOT CONNECTED - SIMULATED DATA';
+                    } else if (statusEl.className !== 'connected') {
+                        statusEl.className = 'connected';
+                        document.getElementById('statusText').textContent = 'CONNECTED';
+                    }
+                    const t = Date.now();
+                    accelSeries[0].append(t, d.ax);
+                    accelSeries[1].append(t, d.ay);
+                    accelSeries[2].append(t, d.az);
+                    gyroSeries[0].append(t, d.gx);
+                    gyroSeries[1].append(t, d.gy);
+                    gyroSeries[2].append(t, d.gz);
+                    valEls.ax.textContent = d.ax.toFixed(3);
+                    valEls.ay.textContent = d.ay.toFixed(3);
+                    valEls.az.textContent = d.az.toFixed(3);
+                    valEls.gx.textContent = d.gx.toFixed(4);
+                    valEls.gy.textContent = d.gy.toFixed(4);
+                    valEls.gz.textContent = d.gz.toFixed(4);
+                };
+
+                ws.onclose = () => {
+                    document.getElementById('statusText').textContent = 'DISCONNECTED - reconnecting...';
+                    statusEl.className = 'disconnected';
+                    setTimeout(connect, 2000);
+                };
+
+                ws.onerror = () => ws.close();
+            }
+
+            connect();
+        });
+    </script>
+</body>
+</html>
