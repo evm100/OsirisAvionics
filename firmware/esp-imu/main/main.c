@@ -17,8 +17,8 @@
 static const char *TAG = "LSM6DSOX";
 
 // --- I2C Configuration ---
-#define I2C_MASTER_SDA_IO       7
-#define I2C_MASTER_SCL_IO       8
+#define I2C_MASTER_SDA_IO       8
+#define I2C_MASTER_SCL_IO       7
 #define I2C_MASTER_FREQ_HZ      400000
 #define I2C_MASTER_TIMEOUT_MS   1000
 
