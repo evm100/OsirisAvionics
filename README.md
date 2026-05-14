@@ -156,8 +156,8 @@ to integration-test yet.
 
 **Avionics co-leads:**
 
-- Edgar ([@evm100](https://github.com/evm100)) — firmware, software, build infrastructure
-- Esha Rami ([@esha-rami](https://github.com/esha-rami)) — hardware, schematics, board bring-up
+- Edgar Verastegui Medina ([@evm100](https://github.com/evm100))
+- Esha Rami ([@esha-rami](https://github.com/esha-rami))
 
 For now: open a PR, or grab a co-lead in person at the lab. New contributors
 should ask a co-lead for an invite to the RPL Discord and the
